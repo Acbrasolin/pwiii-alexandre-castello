@@ -1,5 +1,10 @@
-﻿
+﻿/**
+ * @file product.service.js
+ * @description Camada de serviço responsável pela gestão de livros (produtos),
+ * incluindo armazenamento em memória, consultas com filtros, paginação, CRUD e estatísticas.
+ */
 
+// Banco de dados simulado em memória com uma lista inicial de livros
 let books = [
     {
         id: 1,
@@ -80,26 +85,31 @@ let books = [
     }
 ];
 
+// Contador para gerar IDs auto-incrementais para novos livros
 let nextId = 8;
 
 
-
+/**
+ * Retorna uma lista de livros aplicando filtros, ordenação e paginação.
+ * @param {Object} [params] - Parâmetros de consulta (genre, search, sort, order, page, limit)
+ * @returns {Object} Objeto contendo os dados paginados e metadados de paginação
+ */
 function getAll({ genre, search, sort, order, page, limit } = {}) {
     let result = [...books];
 
-  
+    // Filtra por gênero (case-insensitive)
     if (genre) {
         const g = genre.toLowerCase();
         result = result.filter(b => b.genre.toLowerCase() === g);
     }
 
-  
+    // Filtra por termo de busca no título (case-insensitive)
     if (search) {
         const term = search.toLowerCase();
         result = result.filter(b => b.title.toLowerCase().includes(term));
     }
 
-  
+    // Ordenação por campos permitidos e direção (asc/desc)
     const validSortFields = ["title", "price", "quantity", "genre", "author", "createdAt"];
     if (sort && validSortFields.includes(sort)) {
         const dir = order === "desc" ? -1 : 1;
@@ -110,7 +120,7 @@ function getAll({ genre, search, sort, order, page, limit } = {}) {
         });
     }
 
-    
+    // Lógica de paginação
     const pageNum = parseInt(page) || 1;
     const limitNum = parseInt(limit) || result.length;
     const total = result.length;
@@ -129,17 +139,35 @@ function getAll({ genre, search, sort, order, page, limit } = {}) {
     };
 }
 
+
+/**
+ * Busca um livro específico pelo seu ID.
+ * @param {number} id - ID do livro
+ * @returns {Object|null} O livro encontrado ou null caso não exista
+ */
 function getById(id) {
     return books.find(b => b.id === id) || null;
 }
 
+
+/**
+ * Verifica se já existe um livro cadastrado com o mesmo título.
+ * Permite excluir um ID específico da verificação (útil em atualizações).
+ * @param {string} title - Título a ser verificado
+ * @param {number|null} [excludeId=null] - ID a ser ignorado na busca
+ * @returns {boolean} True se já existir, false caso contrário
+ */
 function existsByTitle(title, excludeId = null) {
     const lower = title.toLowerCase();
     return books.some(b => b.title.toLowerCase() === lower && b.id !== excludeId);
 }
 
 
-
+/**
+ * Cria e adiciona um novo livro ao array em memória.
+ * @param {Object} data - Dados do livro a ser criado
+ * @returns {Object} O objeto do livro recém-criado
+ */
 function create(data) {
     const now = new Date().toISOString();
     const book = {
@@ -157,6 +185,13 @@ function create(data) {
     return book;
 }
 
+
+/**
+ * Atualiza completamente um livro existente (substituição total dos dados).
+ * @param {number} id - ID do livro
+ * @param {Object} data - Novos dados do livro
+ * @returns {Object|null} O livro atualizado ou null se não for encontrado
+ */
 function update(id, data) {
     const index = books.findIndex(b => b.id === id);
     if (index === -1) return null;
@@ -169,12 +204,19 @@ function update(id, data) {
         quantity: data.quantity,
         genre: data.genre,
         author: data.author || "Desconhecido",
-        createdAt: books[index].createdAt,
-        updatedAt: new Date().toISOString()
+        createdAt: books[index].createdAt, // Preserva a data de criação original
+        updatedAt: new Date().toISOString() // Atualiza a data de modificação
     };
     return books[index];
 }
 
+
+/**
+ * Atualiza parcialmente um livro existente (apenas os campos enviados).
+ * @param {number} id - ID do livro
+ * @param {Object} data - Objeto contendo os campos a serem alterados
+ * @returns {Object|null} O livro atualizado ou null se não for encontrado
+ */
 function patch(id, data) {
     const book = getById(id);
     if (!book) return null;
@@ -190,6 +232,12 @@ function patch(id, data) {
     return book;
 }
 
+
+/**
+ * Remove um livro do array com base no ID.
+ * @param {number} id - ID do livro
+ * @returns {boolean} True se removido com sucesso, false se não encontrado
+ */
 function remove(id) {
     const index = books.findIndex(b => b.id === id);
     if (index === -1) return false;
@@ -198,14 +246,25 @@ function remove(id) {
 }
 
 
+/**
+ * Calcula e retorna estatísticas gerais sobre o estoque de livros.
+ * @returns {Object} Objeto com total de livros, valor total, mais caro, mais barato, sem estoque e contagem por gênero
+ */
 function getStats() {
     if (books.length === 0) {
         return { total: 0, totalValue: 0, mostExpensive: null, cheapest: null, outOfStock: 0 };
     }
 
+    // Calcula o valor total financeiro em estoque (preço * quantidade)
     const totalValue = books.reduce((sum, b) => sum + b.price * b.quantity, 0);
+    
+    // Ordena os livros por preço decrescente para identificar mais caro e mais barato
     const sorted = [...books].sort((a, b) => b.price - a.price);
+    
+    // Conta quantos livros estão com quantidade igual a zero (sem estoque)
     const outOfStock = books.filter(b => b.quantity === 0).length;
+    
+    // Agrupa a contagem de livros por gênero
     const byGenre = {};
     books.forEach(b => {
         byGenre[b.genre] = (byGenre[b.genre] || 0) + 1;
@@ -222,12 +281,16 @@ function getStats() {
 }
 
 
-
+/**
+ * Retorna uma lista única e ordenada alfabeticamente de todos os gêneros cadastrados.
+ * @returns {Array} Lista de gêneros distintos
+ */
 function getDistinctGenres() {
     const set = new Set(books.map(b => b.genre));
     return [...set].sort();
 }
 
+// Exporta todas as funções do serviço para uso nos controllers
 module.exports = {
     getAll,
     getById,

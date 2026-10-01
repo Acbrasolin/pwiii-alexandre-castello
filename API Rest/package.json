@@ -1,0 +1,16 @@
+﻿{
+  "name": "pwiii-alexandre-castello",
+  "version": "1.0.0",
+  "description": "API RESTful de livraria com Node.js e Express — pwiii alexandre-castello",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
